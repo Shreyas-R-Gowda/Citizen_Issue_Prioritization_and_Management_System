@@ -15,7 +15,7 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 const LocationMarker = ({ position, setPosition }) => {
-    const map = useMapEvents({
+    useMapEvents({
         click(e) {
             setPosition(e.latlng);
         },
@@ -38,12 +38,7 @@ const RecenterMap = ({ center }) => {
 const LocationPicker = ({ position, onLocationChange }) => {
     // Default to a central location (e.g. Bangalore or generic) or user's current location if provided
     const [markerPos, setMarkerPos] = useState(position || { lat: 12.9716, lng: 77.5946 });
-
-    useEffect(() => {
-        if (position) {
-            setMarkerPos(position);
-        }
-    }, [position]);
+    const displayPosition = position || markerPos;
 
     const handleSetPosition = (latlng) => {
         setMarkerPos(latlng);
@@ -53,7 +48,7 @@ const LocationPicker = ({ position, onLocationChange }) => {
     return (
         <div style={{ height: '300px', width: '100%', marginBottom: '1rem', borderRadius: '8px', overflow: 'hidden', border: '1px solid #ddd' }}>
             <MapContainer
-                center={markerPos}
+                center={displayPosition}
                 zoom={13}
                 style={{ height: '100%', width: '100%' }}
             >
@@ -61,8 +56,8 @@ const LocationPicker = ({ position, onLocationChange }) => {
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                <LocationMarker position={markerPos} setPosition={handleSetPosition} />
-                <RecenterMap center={markerPos} />
+                <LocationMarker position={displayPosition} setPosition={handleSetPosition} />
+                <RecenterMap center={displayPosition} />
             </MapContainer>
             <div className="text-xs text-muted mt-1 text-center">
                 Click on the map to pin exact location

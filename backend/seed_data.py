@@ -1,9 +1,9 @@
 
 import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy import text, select
+from sqlalchemy import select
 from database import DATABASE_URL
-from models import Department, User, UserRole, FieldTeam
+from models import Department, User, UserRole
 from utils.security import get_password_hash
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession

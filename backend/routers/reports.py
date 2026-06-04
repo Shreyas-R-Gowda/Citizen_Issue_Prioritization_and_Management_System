@@ -164,7 +164,7 @@ async def get_reports(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     sort_by: Optional[str] = Query("created_at", description="Sort by: created_at, upvotes, priority"),
-    sort_order: Optional[str] = Query("desc", description="asc or desc"),
+    sort_order: Optional[str] = Query("desc", pattern="^(asc|desc)$", description="asc or desc"),
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
@@ -251,7 +251,7 @@ async def get_report(report_id: int, db: AsyncSession = Depends(get_db)):
 @router.post("/{report_id}/verify", response_model=ReportResponse)
 async def verify_report(
     report_id: int,
-    feedback: Optional[str] = None,
+    feedback: Optional[str] = Query(None, max_length=1000),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -320,7 +320,7 @@ async def reanalyze_report(
 @router.post("/{report_id}/reopen", response_model=ReportResponse)
 async def reopen_report(
     report_id: int,
-    feedback: str,
+    feedback: str = Query(..., min_length=1, max_length=1000),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -342,7 +342,7 @@ async def reopen_report(
 @router.patch("/{report_id}/status", response_model=ReportResponse)
 async def update_report_status(
     report_id: int,
-    new_status: str,
+    new_status: str = Query(...),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):

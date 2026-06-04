@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Circle } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
@@ -9,16 +9,8 @@ import Navbar from '../../components/shared/Navbar';
 import Badge from '../../components/shared/Badge';
 import Button from '../../components/shared/Button';
 import { getImageUrl } from '../../utils/image';
+import { REPORT_STATUS_COLORS, getStatusLabel, getStatusVariant } from '../../utils/reportMeta';
 import './MapView.css';
-
-// ── Marker icons by status ─────────────────────────────────────────────────
-const STATUS_COLORS = {
-    pending:     '#ef4444',
-    in_progress: '#f59e0b',
-    resolved:    '#10b981',
-    reopened:    '#8b5cf6',
-    closed:      '#6b7280',
-};
 
 const makeIcon = (color) => L.divIcon({
     className: '',
@@ -33,11 +25,11 @@ const makeIcon = (color) => L.divIcon({
 });
 
 const ICONS = {
-    pending:     makeIcon(STATUS_COLORS.pending),
-    in_progress: makeIcon(STATUS_COLORS.in_progress),
-    resolved:    makeIcon(STATUS_COLORS.resolved),
-    reopened:    makeIcon(STATUS_COLORS.reopened),
-    closed:      makeIcon(STATUS_COLORS.closed),
+    pending:     makeIcon(REPORT_STATUS_COLORS.pending),
+    in_progress: makeIcon(REPORT_STATUS_COLORS.in_progress),
+    resolved:    makeIcon(REPORT_STATUS_COLORS.resolved),
+    reopened:    makeIcon(REPORT_STATUS_COLORS.reopened),
+    closed:      makeIcon(REPORT_STATUS_COLORS.closed),
 };
 
 const SEVERITY_INTENSITY = { critical: 1.0, high: 0.8, medium: 0.5, low: 0.3 };
@@ -80,29 +72,10 @@ function LocateController({ trigger, onLocated, onError }) {
             },
             { timeout: 10000 }
         );
-    }, [trigger]);
+    }, [trigger, map, onError, onLocated]);
 
     return null;
 }
-
-// ── Status badge variant ───────────────────────────────────────────────────
-const statusVariant = (s = '') => {
-    if (s === 'resolved')    return 'success';
-    if (s === 'in_progress') return 'warning';
-    if (s === 'pending')     return 'danger';
-    if (s === 'reopened')    return 'danger';
-    if (s === 'closed')      return 'success';
-    return 'neutral';
-};
-
-const statusLabel = (s = '') =>
-    ({
-        pending: 'Pending',
-        in_progress: 'In Progress',
-        resolved: 'Resolved',
-        reopened: 'Reopened',
-        closed: 'Closed',
-    }[s] || s);
 
 // ── Main component ─────────────────────────────────────────────────────────
 const MapView = () => {
@@ -149,11 +122,24 @@ const MapView = () => {
         SEVERITY_INTENSITY[r.ai_severity_level || r.severity] ?? 0.5,
     ]);
 
-    const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3500); };
+    const showToast = useCallback((msg) => {
+        setToast(msg);
+        setTimeout(() => setToast(''), 3500);
+    }, []);
 
     const toggleFilter = (key) => setFilters(f => ({ ...f, [key]: !f[key] }));
 
     const handleLocate = () => { setLocating(true); setLocateTrigger(n => n + 1); };
+
+    const handleLocated = useCallback((pos) => {
+        setLocating(false);
+        setUserPos(pos);
+    }, []);
+
+    const handleLocationError = useCallback((msg) => {
+        setLocating(false);
+        showToast(msg);
+    }, [showToast]);
 
     return (
         <div className="min-h-screen bg-background">
@@ -178,7 +164,7 @@ const MapView = () => {
                             <button
                                 key={key}
                                 className={`map-filter-chip ${filters[key] ? 'active' : ''}`}
-                                style={{ '--chip-color': STATUS_COLORS[key] }}
+                                style={{ '--chip-color': REPORT_STATUS_COLORS[key] }}
                                 onClick={() => toggleFilter(key)}
                             >
                                 <span className="chip-dot" />
@@ -217,8 +203,8 @@ const MapView = () => {
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <div className="flex justify-between items-start mb-xs">
                                             <h3 className="text-sm font-semibold" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 130 }}>{r.title}</h3>
-                                            <Badge variant={statusVariant(r.status)} className="text-xs">
-                                                {statusLabel(r.status)}
+                                            <Badge variant={getStatusVariant(r.status)} className="text-xs">
+                                                {getStatusLabel(r.status)}
                                             </Badge>
                                         </div>
                                         {r.ai_severity_score && (
@@ -244,8 +230,8 @@ const MapView = () => {
                         <HeatmapLayer points={heatPoints} visible={showHeatmap} />
                         <LocateController
                             trigger={locateTrigger}
-                            onLocated={(pos) => { setLocating(false); setUserPos(pos); }}
-                            onError={(msg) => { setLocating(false); showToast(msg); }}
+                            onLocated={handleLocated}
+                            onError={handleLocationError}
                         />
 
                         {filteredReports.map((r) => (
@@ -257,8 +243,8 @@ const MapView = () => {
                                 <Popup minWidth={200} autoClose={false} closeOnClick={false}>
                                     <div className="map-popup">
                                         <p className="map-popup-title">{r.title}</p>
-                                        <Badge variant={statusVariant(r.status)} className="text-xs mb-xs">
-                                            {statusLabel(r.status)}
+                                        <Badge variant={getStatusVariant(r.status)} className="text-xs mb-xs">
+                                            {getStatusLabel(r.status)}
                                         </Badge>
                                         {r.description && (
                                             <p className="map-popup-desc">{r.description}</p>

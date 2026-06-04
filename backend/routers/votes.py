@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException
-from geoalchemy2.shape import to_shape
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 

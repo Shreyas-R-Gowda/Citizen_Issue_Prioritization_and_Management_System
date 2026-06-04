@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
-from typing import Optional, List, Any
+from typing import Optional
 from datetime import datetime
 from models import UserRole, ReportStatus, ReportSeverity, ReportPriority
 
@@ -8,8 +8,8 @@ class UserBase(BaseModel):
     email: EmailStr
 
 class UserCreate(UserBase):
-    name: str
-    password: str
+    name: str = Field(..., min_length=2, max_length=100)
+    password: str = Field(..., min_length=6, max_length=128)
     role: UserRole = UserRole.citizen
 
 class UserResponse(UserBase):
@@ -51,12 +51,17 @@ class FieldTeamResponse(BaseModel):
 
 # Report Schemas
 class ReportBase(BaseModel):
-    title: str
-    description: str
-    category: str = "road_issues"
-    latitude: float
-    longitude: float
-    image_url: Optional[str] = None
+    title: str = Field(..., min_length=3, max_length=120)
+    description: str = Field(..., min_length=5, max_length=2000)
+    category: str = Field("road_issues", max_length=50)
+    latitude: float = Field(..., ge=-90, le=90)
+    longitude: float = Field(..., ge=-180, le=180)
+    image_url: Optional[str] = Field(None, max_length=500)
+
+    @field_validator("category")
+    @classmethod
+    def normalize_category(cls, value: str) -> str:
+        return value.strip().lower()
 
 class ReportCreate(ReportBase):
     pass
@@ -102,8 +107,8 @@ class ReportResponse(BaseModel):
 class ReportUpdate(BaseModel):
     status: Optional[ReportStatus] = None
     severity: Optional[ReportSeverity] = None
-    title: Optional[str] = None
-    description: Optional[str] = None
-    resolution_image_url: Optional[str] = None
-    citizen_feedback: Optional[str] = None
+    title: Optional[str] = Field(None, min_length=3, max_length=120)
+    description: Optional[str] = Field(None, min_length=5, max_length=2000)
+    resolution_image_url: Optional[str] = Field(None, max_length=500)
+    citizen_feedback: Optional[str] = Field(None, max_length=1000)
     assigned_team_id: Optional[int] = None

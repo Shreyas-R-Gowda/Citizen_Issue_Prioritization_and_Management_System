@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Filter, SortDesc, Brain, Trash2 } from 'lucide-react';
 import Navbar from '../../components/shared/Navbar';
 import Card from '../../components/shared/Card';
 import Badge from '../../components/shared/Badge';
-import Button from '../../components/shared/Button';
 import './AdminReports.css';
 import { getImageUrl } from '../../utils/image';
 import api from '../../api';
@@ -17,29 +16,21 @@ const AdminReports = () => {
   const [filterStatus, setFilterStatus] = useState('all');
 
   useEffect(() => {
-    fetchReports();
-  }, [sortBy, filterStatus]);
+    const params = new URLSearchParams({
+      sort_by: sortBy,
+      sort_order: 'desc',
+      category: 'road_issues'
+    });
 
-  const fetchReports = async () => {
-    try {
-      const params = new URLSearchParams({
-        sort_by: sortBy,
-        sort_order: 'desc',
-        category: 'road_issues'
-      });
-
-      if (filterStatus !== 'all') {
-        params.append('status', filterStatus);
-      }
-
-      const response = await api.get(`/reports?${params}`);
-      setReports(Array.isArray(response.data) ? response.data : response.data.items || []);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching reports:', error);
-      setLoading(false);
+    if (filterStatus !== 'all') {
+      params.append('status', filterStatus);
     }
-  };
+
+    api.get(`/reports?${params}`)
+      .then((response) => setReports(Array.isArray(response.data) ? response.data : response.data.items || []))
+      .catch((error) => console.error('Error fetching reports:', error))
+      .finally(() => setLoading(false));
+  }, [filterStatus, sortBy]);
 
   const deleteReport = async (e, id) => {
     e.stopPropagation();
@@ -47,7 +38,7 @@ const AdminReports = () => {
     try {
       await api.delete(`/reports/${id}`);
       setReports(prev => prev.filter(r => r.id !== id));
-    } catch (err) {
+    } catch {
       alert('Failed to delete report.');
     }
   };
@@ -57,7 +48,7 @@ const AdminReports = () => {
     try {
       await api.patch(`/reports/${id}/status`, null, { params: { new_status: newStatus } });
       setReports(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r));
-    } catch (err) {
+    } catch {
       alert('Failed to update status.');
     }
   };
@@ -180,14 +171,6 @@ const AdminReports = () => {
                   <div className="ai-breakdown">
                     <h4 className="ai-breakdown-title">AI Analysis</h4>
                     <div className="ai-scores-grid">
-                      <div className="ai-score-item">
-                        <span className="ai-score-label">Depth</span>
-                        <span className="ai-score-value">
-                          {report.pothole_depth_score !== null && report.pothole_depth_score !== undefined
-                            ? `${Math.round(report.pothole_depth_score * 100)}%`
-                            : "N/A"}
-                        </span>
-                      </div>
                       <div className="ai-score-item">
                         <span className="ai-score-label">Spread</span>
                         <span className="ai-score-value">

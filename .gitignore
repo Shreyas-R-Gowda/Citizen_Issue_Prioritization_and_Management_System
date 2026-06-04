@@ -4,6 +4,9 @@
 .env.*
 !.env.example
 
+# OS/editor artifacts
+.DS_Store
+
 # Python
 __pycache__/
 *.py[cod]
@@ -14,10 +17,10 @@ __pycache__/
 node_modules/
 dist/
 .vite/
-package-lock.json
 
 # Local Docker config
 .docker/
+backend/uploads/
 
 # Virtual environments
 .venv/

@@ -5,8 +5,7 @@ from sqlalchemy.future import select
 from database import get_db
 from models import User, UserRole, Report, ReportStatus, ReportPriority
 from routers.auth import get_current_user
-from typing import List, Dict, Optional
-from datetime import datetime, timedelta
+from typing import Optional
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 ROAD_FILTER = Report.category == "road_issues"

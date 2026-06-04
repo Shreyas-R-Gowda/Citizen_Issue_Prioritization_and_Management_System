@@ -5,13 +5,11 @@ import Navbar from '../../components/shared/Navbar';
 import Button from '../../components/shared/Button';
 import Card from '../../components/shared/Card';
 import api from '../../api';
-import { useAuth } from '../../contexts/AuthContext';
 import './NewReport.css';
 import LocationPicker from '../../components/shared/LocationPicker';
 
 const NewReport = () => {
   const navigate = useNavigate();
-  const { token } = useAuth();
   const [formData, setFormData] = useState({
     title: "",
     location: "",

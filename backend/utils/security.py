@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-import bcrypt  # Use bcrypt directly instead of passlib
+import bcrypt
 import os
 from dotenv import load_dotenv
 

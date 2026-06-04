@@ -115,20 +115,19 @@ const AIAnalysisCard = ({ report }) => {
   const circumference = 2 * Math.PI * 45;
   const dashOffset = circumference - (score / 100) * circumference;
 
-  const imageScore = sentimentMeta.image_score ?? (
-    ((report.pothole_depth_score ?? 0) * 0.5 + (report.pothole_spread_score ?? 0) * 0.5) * 100
-  );
+  const imageScore =
+    sentimentMeta.image_score ??
+    ((sentimentMeta.visual_score ?? report.pothole_spread_score ?? 0) * 100);
   const locationScore = sentimentMeta.location_score ?? ((report.location_score ?? 0) * 100);
   const trafficScore = sentimentMeta.traffic_score ?? locationMeta.traffic_score ?? 0;
   const upvoteScore = sentimentMeta.upvote_score ?? ((report.upvote_score ?? 0) * 100);
   const descScore = sentimentMeta.description_score ?? ((report.emotion_score ?? 0) * 100);
 
-  // Physical damage metrics
-  const depthPct = Math.round((report.pothole_depth_score ?? 0) * 100);
+  // Physical damage metrics available from the current backend response.
   const spreadPct = Math.round((report.pothole_spread_score ?? 0) * 100);
 
   // Pothole count: available from YOLO detector in heuristic path
-  const detectorMeta = sentimentMeta.visual_meta?.detector;
+  const detectorMeta = sentimentMeta.yolo;
   const potholeCount = detectorMeta?.count ?? null;
   const maxAreaRatio = detectorMeta?.max_area_ratio ?? null;
 
@@ -223,12 +222,6 @@ const AIAnalysisCard = ({ report }) => {
           />
         )}
         <StatChip
-          icon="📏"
-          label="Depth Score"
-          value={`${depthPct}%`}
-          color={scoreColor(depthPct)}
-        />
-        <StatChip
           icon="↔️"
           label="Spread Score"
           value={`${spreadPct}%`}
@@ -265,7 +258,7 @@ const AIAnalysisCard = ({ report }) => {
                 subtext={
                   isGroq
                     ? '📸 AI vision model analyzed the uploaded photo directly'
-                    : '📸 Pixel heuristics: edge detection, darkness depth, texture analysis'
+                    : '📸 Local detector or heuristic visual scoring'
                 }
               />
               <ScoreBar
@@ -309,11 +302,6 @@ const AIAnalysisCard = ({ report }) => {
                   <span className="ai-traffic-score">
                     Traffic density score: <strong>{Math.round(trafficScore)}/100</strong>
                   </span>
-                  {locationMeta.coordinates_supplied && (
-                    <span className="ai-traffic-coords">
-                      📌 {locationMeta.latitude?.toFixed(5)}, {locationMeta.longitude?.toFixed(5)}
-                    </span>
-                  )}
                 </div>
               </div>
             </div>

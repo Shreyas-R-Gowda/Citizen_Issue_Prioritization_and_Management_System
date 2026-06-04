@@ -1,48 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 import { Clock, CheckCircle, AlertCircle, Filter } from 'lucide-react';
 import Navbar from '../../components/shared/Navbar';
 import Card from '../../components/shared/Card';
 import Badge from '../../components/shared/Badge';
 import Button from '../../components/shared/Button';
 import api from '../../api';
+import { getPriorityVariant, getStatusVariant } from '../../utils/reportMeta';
 import './OfficerDashboard.css';
 
 const OfficerDashboard = () => {
-    const navigate = useNavigate();
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const [priorityFilter, setPriorityFilter] = useState('');
 
     useEffect(() => {
-        fetchReports();
-    }, [filter, priorityFilter]);
+        const params = {
+            sort_by: 'priority',
+            sort_order: 'desc',
+            category: 'road_issues'
+        };
 
-    const fetchReports = async () => {
-        try {
-            setLoading(true);
-            const params = {
-                sort_by: 'priority',
-                sort_order: 'desc',
-                category: 'road_issues'
-            };
-
-            if (filter !== 'all') {
-                params.status = filter;
-            }
-            if (priorityFilter) {
-                params.priority = priorityFilter;
-            }
-
-            const response = await api.get('/reports/', { params });
-            setReports(Array.isArray(response.data) ? response.data : response.data.items || []);
-        } catch (err) {
-            console.error('Error fetching reports:', err);
-        } finally {
-            setLoading(false);
+        if (filter !== 'all') {
+            params.status = filter;
         }
-    };
+        if (priorityFilter) {
+            params.priority = priorityFilter;
+        }
+
+        api.get('/reports/', { params })
+            .then((response) => setReports(Array.isArray(response.data) ? response.data : response.data.items || []))
+            .catch((err) => console.error('Error fetching reports:', err))
+            .finally(() => setLoading(false));
+    }, [filter, priorityFilter]);
 
     const updateStatus = async (id, newStatus) => {
         try {
@@ -59,36 +49,6 @@ const OfficerDashboard = () => {
         inProgress: reports.filter(r => r.status === 'in_progress').length,
         resolved: reports.filter(r => r.status === 'resolved' || r.status === 'closed').length,
         reopened: reports.filter(r => r.status === 'reopened').length
-    };
-
-    const getStatusVariant = (status) => {
-        switch (status.toLowerCase()) {
-            case 'resolved':
-            case 'closed':
-                return 'success';
-            case 'in_progress':
-            case 'assigned':
-                return 'warning';
-            case 'pending':
-                return 'danger';
-            case 'reopened':
-                return 'danger';
-            default:
-                return 'neutral';
-        }
-    };
-
-    const getPriorityVariant = (priority) => {
-        switch (priority.toLowerCase()) {
-            case 'high':
-                return 'danger';
-            case 'medium':
-                return 'warning';
-            case 'low':
-                return 'info';
-            default:
-                return 'neutral';
-        }
     };
 
     return (

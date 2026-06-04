@@ -1,27 +1,25 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '../api';
+import { AuthContext } from './AuthContextCore';
 
-const AuthContext = createContext(null);
+const getStoredUser = () => {
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+};
 
-export const useAuth = () => useContext(AuthContext);
+const getStoredToken = () => localStorage.getItem('token');
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [token, setToken] = useState(null);
+    const [user, setUser] = useState(getStoredUser);
+    const [token, setToken] = useState(getStoredToken);
 
     useEffect(() => {
-        // Check for stored token/user on mount
-        const storedToken = localStorage.getItem('token');
-        const storedUser = localStorage.getItem('user');
-        if (storedToken && storedUser) {
-            setToken(storedToken);
-            setUser(JSON.parse(storedUser));
-            // Set default authorization header
-            api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+        if (token) {
+            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        } else {
+            delete api.defaults.headers.common['Authorization'];
         }
-        setLoading(false);
-    }, []);
+    }, [token]);
 
     const login = async (email, password) => {
         try {
@@ -62,7 +60,7 @@ export const AuthProvider = ({ children }) => {
 
     const signup = async (name, email, password, role) => {
         try {
-            const response = await api.post('/auth/register', {
+            await api.post('/auth/register', {
                 name,
                 email,
                 password,
@@ -91,12 +89,12 @@ export const AuthProvider = ({ children }) => {
         login,
         signup,
         logout,
-        loading
+        loading: false
     };
 
     return (
         <AuthContext.Provider value={value}>
-            {!loading && children}
+            {children}
         </AuthContext.Provider>
     );
 };

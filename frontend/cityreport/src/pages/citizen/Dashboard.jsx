@@ -6,19 +6,18 @@ import Navbar from '../../components/shared/Navbar';
 import Button from '../../components/shared/Button';
 import ReportCard from '../../components/citizen/ReportCard';
 import FilterBar from '../../components/shared/FilterBar';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth';
+import { SEVERITY_ORDER } from '../../utils/reportMeta';
 import './Dashboard.css';
 
-const SEVERITY_ORDER = { critical: 4, high: 3, medium: 2, low: 1 };
-
-const StatCard = ({ icon: Icon, label, value, color, onClick, active }) => (
+const StatCard = ({ icon, label, value, color, onClick, active }) => (
     <div
         className="stat-card"
         onClick={onClick}
         style={{ cursor: onClick ? 'pointer' : undefined, outline: active ? `2px solid ${color}` : undefined, outlineOffset: 2 }}
     >
         <div className="stat-icon" style={{ background: color + '20', color }}>
-            <Icon size={22} />
+            {React.createElement(icon, { size: 22 })}
         </div>
         <div>
             <p className="stat-label">{label}</p>

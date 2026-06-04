@@ -6,13 +6,10 @@ import Navbar from '../../components/shared/Navbar';
 import Button from '../../components/shared/Button';
 import ReportCard from '../../components/citizen/ReportCard';
 import FilterBar from '../../components/shared/FilterBar';
-import { useAuth } from '../../contexts/AuthContext';
-
-const SEVERITY_ORDER = { critical: 4, high: 3, medium: 2, low: 1 };
+import { SEVERITY_ORDER } from '../../utils/reportMeta';
 
 const MyReports = () => {
     const navigate = useNavigate();
-    const { user } = useAuth();
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -43,7 +40,9 @@ const MyReports = () => {
             await api.post(`/reports/${id}/upvote`);
             const { data } = await api.get('/reports/mine');
             setReports(data);
-        } catch {}
+        } catch (err) {
+            console.error('Upvote failed:', err);
+        }
     };
 
     const filtered = useMemo(() => {

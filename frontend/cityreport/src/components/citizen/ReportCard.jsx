@@ -4,14 +4,14 @@ import Badge from '../shared/Badge';
 import Button from '../shared/Button';
 import './ReportCard.css';
 import { getImageUrl } from '../../utils/image';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth';
+import { getStatusLabel, getStatusVariant } from '../../utils/reportMeta';
 
 const ReportCard = ({ report, onUpvote, onClick, onWithdraw, isOwner }) => {
     const { user } = useAuth();
     const {
         id,
         title,
-        category,
         location,
         status,
         image_url,
@@ -22,28 +22,6 @@ const ReportCard = ({ report, onUpvote, onClick, onWithdraw, isOwner }) => {
     } = report;
 
     const upvoted = localStorage.getItem(`upvoted_${user?.id}_${id}`) === '1';
-
-    const displayCategory = category === 'road_issues' ? 'Road Issue' : category;
-
-
-    const STATUS_LABELS = {
-        pending: 'Pending',
-        in_progress: 'In Progress',
-        resolved: 'Resolved',
-        closed: 'Closed',
-        reopened: 'Reopened',
-    };
-
-    const getStatusVariant = (status) => {
-        switch (status.toLowerCase()) {
-            case 'resolved':
-            case 'closed': return 'success';
-            case 'in_progress': return 'warning';
-            case 'reopened': return 'danger';
-            case 'pending': return 'danger';
-            default: return 'neutral';
-        }
-    };
 
     return (
         <Card className="report-card" padding="none" onClick={() => onClick(id)}>
@@ -62,7 +40,7 @@ const ReportCard = ({ report, onUpvote, onClick, onWithdraw, isOwner }) => {
             <div className="report-content p-md">
                 <div className="flex justify-between items-start mb-sm">
                     <h3 className="text-lg font-semibold report-title">{title}</h3>
-                    <Badge variant={getStatusVariant(status)}>{STATUS_LABELS[status] || status}</Badge>
+                    <Badge variant={getStatusVariant(status)}>{getStatusLabel(status)}</Badge>
                 </div>
 
                 {location && (

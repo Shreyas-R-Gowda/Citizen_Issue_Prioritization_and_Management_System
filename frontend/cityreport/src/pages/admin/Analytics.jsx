@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { PieChart, Pie, BarChart, Bar, LineChart, Line, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import React, { useEffect, useState } from 'react';
+import { PieChart, Pie, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import Navbar from '../../components/shared/Navbar';
 import Card from '../../components/shared/Card';
@@ -25,56 +25,40 @@ const Analytics = () => {
     const [heatmapData, setHeatmapData] = useState([]);
 
     useEffect(() => {
-        fetchAnalytics();
+        Promise.all([
+            api.get('/analytics/summary'),
+            api.get('/analytics/status-distribution'),
+            api.get('/analytics/priority-distribution'),
+            api.get('/analytics/time-bound-stats'),
+            api.get('/analytics/heatmap-data')
+        ])
+            .then(([summaryRes, statusRes, priorityRes, timeRes, heatmapRes]) => {
+                setSummary(summaryRes.data);
+
+                setStatusDist(Object.entries(statusRes.data.status_distribution).map(([key, value]) => ({
+                    name: key.replace('_', ' ').toUpperCase(),
+                    value,
+                    color: COLORS[key] || '#6B7280'
+                })));
+
+                setPriorityDist(Object.entries(priorityRes.data.priority_distribution).map(([key, value]) => ({
+                    name: key.toUpperCase(),
+                    value,
+                    color: COLORS[key] || '#6B7280'
+                })));
+
+                setTimeBoundStats([
+                    { name: '< 24 Hours', value: timeRes.data.time_bound_stats.under_24h || 0 },
+                    { name: '< 7 Days', value: timeRes.data.time_bound_stats.under_7d || 0 },
+                    { name: '< 30 Days', value: timeRes.data.time_bound_stats.under_30d || 0 },
+                    { name: '> 30 Days', value: timeRes.data.time_bound_stats.over_30d || 0 }
+                ]);
+
+                setHeatmapData(heatmapRes.data.heatmap_data || []);
+            })
+            .catch((err) => console.error('Error fetching analytics:', err))
+            .finally(() => setLoading(false));
     }, []);
-
-    const fetchAnalytics = async () => {
-        try {
-            setLoading(true);
-
-            // Fetch all analytics data
-            const [summaryRes, statusRes, priorityRes, timeRes, heatmapRes] = await Promise.all([
-                api.get('/analytics/summary'),
-                api.get('/analytics/status-distribution'),
-                api.get('/analytics/priority-distribution'),
-                api.get('/analytics/time-bound-stats'),
-                api.get('/analytics/heatmap-data')
-            ]);
-
-            setSummary(summaryRes.data);
-
-            // Transform status distribution for charts
-            const statusData = Object.entries(statusRes.data.status_distribution).map(([key, value]) => ({
-                name: key.replace('_', ' ').toUpperCase(),
-                value,
-                color: COLORS[key] || '#6B7280'
-            }));
-            setStatusDist(statusData);
-
-            // Transform priority distribution
-            const priorityData = Object.entries(priorityRes.data.priority_distribution).map(([key, value]) => ({
-                name: key.toUpperCase(),
-                value,
-                color: COLORS[key] || '#6B7280'
-            }));
-            setPriorityDist(priorityData);
-
-            // Transform time-bound stats
-            const timeData = [
-                { name: '< 24 Hours', value: timeRes.data.time_bound_stats.under_24h || 0 },
-                { name: '< 7 Days', value: timeRes.data.time_bound_stats.under_7d || 0 },
-                { name: '< 30 Days', value: timeRes.data.time_bound_stats.under_30d || 0 },
-                { name: '> 30 Days', value: timeRes.data.time_bound_stats.over_30d || 0 }
-            ];
-            setTimeBoundStats(timeData);
-
-            setHeatmapData(heatmapRes.data.heatmap_data || []);
-        } catch (err) {
-            console.error('Error fetching analytics:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     if (loading) {
         return (

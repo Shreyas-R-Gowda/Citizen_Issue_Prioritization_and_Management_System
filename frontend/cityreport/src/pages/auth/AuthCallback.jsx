@@ -1,11 +1,9 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
 
 const AuthCallback = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const { login } = useAuth(); // We might need a direct setAuth method, but let's see
 
     useEffect(() => {
         const token = searchParams.get('token');

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, MapPin, Calendar, ThumbsUp, CheckCircle, AlertTriangle, Trash2 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
@@ -9,9 +9,10 @@ import Button from '../../components/shared/Button';
 import Card from '../../components/shared/Card';
 import Badge from '../../components/shared/Badge';
 import AIAnalysisCard from '../../components/AIAnalysisCard';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth';
 import './ReportDetail.css';
 import { getImageUrl } from '../../utils/image';
+import { formatCategory, getPriorityVariant, getStatusLabel, getStatusVariant } from '../../utils/reportMeta';
 import api from '../../api';
 
 // Fix default leaflet marker icons
@@ -38,13 +39,8 @@ const ReportDetail = () => {
   const [reopenText, setReopenText]   = useState('');
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Re-fetch whenever the URL (including navigation state) changes so
-  // clicking a notification for the same report always shows fresh data.
-  useEffect(() => {
-    setLoading(true);
-    setReport(null);
-    setGeoAddress('');
-    api.get(`/reports/${id}`)
+  const fetchReport = useCallback(() => {
+    return api.get(`/reports/${id}`)
       .then(({ data }) => {
         setReport(data);
         // Restore upvote state from localStorage
@@ -58,11 +54,21 @@ const ReportDetail = () => {
             .then(r => r.json())
             .then(geo => setGeoAddress(geo.display_name || ''))
             .catch(() => {});
+        } else {
+          setGeoAddress('');
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        setReport(null);
+      })
       .finally(() => setLoading(false));
-  }, [id, location.key]);
+  }, [id, user?.id]);
+
+  // Re-fetch whenever the URL (including navigation state) changes so
+  // clicking a notification for the same report always shows fresh data.
+  useEffect(() => {
+    fetchReport();
+  }, [fetchReport, location.key]);
 
   if (loading) return (
     <div className="min-h-screen bg-background">
@@ -82,19 +88,6 @@ const ReportDetail = () => {
   );
 
   const isOwner = user && Number(user.id) === Number(report.user_id);
-
-  const getStatusVariant = (s = '') => {
-    if (s === 'resolved' || s === 'closed') return 'success';
-    if (s === 'in_progress') return 'warning';
-    if (s === 'reopened') return 'danger';
-    if (s === 'pending') return 'danger';
-    return 'neutral';
-  };
-
-  const statusLabel = (s = '') => ({
-    pending: 'Pending', in_progress: 'In Progress',
-    resolved: 'Resolved', closed: 'Closed', reopened: 'Reopened',
-  }[s] || s);
 
   const handleUpvote = async () => {
     const newUpvoted = !upvoted;
@@ -181,7 +174,7 @@ const ReportDetail = () => {
           <div className="flex-1">
             <div className="flex items-center gap-sm flex-wrap">
               <h1 className="text-2xl font-bold">{report.title}</h1>
-              <Badge variant={getStatusVariant(report.status)}>{statusLabel(report.status)}</Badge>
+              <Badge variant={getStatusVariant(report.status)}>{getStatusLabel(report.status)}</Badge>
             </div>
           </div>
         </div>
@@ -299,11 +292,11 @@ const ReportDetail = () => {
               <div className="info-list">
                 <div className="info-item">
                   <span className="info-label">Status</span>
-                  <Badge variant={getStatusVariant(report.status)}>{statusLabel(report.status)}</Badge>
+                  <Badge variant={getStatusVariant(report.status)}>{getStatusLabel(report.status)}</Badge>
                 </div>
                 <div className="info-item">
                   <span className="info-label">Category</span>
-                  <span className="info-value">{report.category?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'General'}</span>
+                  <span className="info-value">{formatCategory(report.category) || 'General'}</span>
                 </div>
                 <div className="info-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem' }}>
                   <span className="info-label">Location</span>
@@ -340,10 +333,7 @@ const ReportDetail = () => {
                 </div>
                 <div className="info-item">
                   <span className="info-label">Priority</span>
-                  <Badge variant={
-                    ['high','critical'].includes(report.priority) ? 'danger' :
-                    report.priority === 'low' ? 'success' : 'neutral'
-                  }>
+                  <Badge variant={getPriorityVariant(report.priority)}>
                     {report.priority?.toUpperCase() || 'MEDIUM'}
                   </Badge>
                 </div>
